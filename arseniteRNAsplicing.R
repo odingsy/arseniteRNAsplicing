@@ -110,12 +110,13 @@ p <- ftbl %>%
   geom_point(color = 'grey', size = 0.5, alpha = .5)+
   geom_point(data = . %>% filter(nchar(zincFinger) !=0 & `num<1.5` <= 2 & mean > 1.5), aes(color = `Arsenite replaceable zinc-finger domain`), size = 0.5)+
   ggrepel::geom_label_repel(data = . %>% filter(gn %in% c('SF1', 'METAP1', 'ZC3H15', 'POLD1')), aes(label = gn), label.size = NA)+
+  geom_point(data = . %>% filter(nchar(zincFinger) !=0 & `num<1.5` <= 2 & mean > 1.5) %>% filter(gn %in% c('POLD1')), aes(color = `Arsenite replaceable zinc-finger domain`), size = 1)+
   ggh4x::coord_axes_inside(labels_inside = TRUE, xlim = c(0,6), ylim = c(0,6), xintercept = 1, yintercept = 1, ratio = 1)+
   labs(x = "1/forward = ctrl(L)/competitive(H)", y = "reverse = ctrl(H)/competitive(L)")+
   theme_classic()+ # increase x limit
   theme(legend.position = "none")
 
-ggsave(filename = file.path(base,'PhD_study/conferences/23ASMS/pngs/protein_dotplot.svg'), device = 'svg', plot = p)
+ggsave(filename = file.path(base,'PhD_study/conferences/23ASMS/pngs/protein_dotplot.svg'), device = 'svg', plot = p, width = 5, height = 5, units = 'in')
 
 
 # overlap majiq and leafcutter output for GSE205332,  MAJIQ (P(ΔΨ > 0.1) > 0.95) and LeafCutter (P < 0.05) -----
