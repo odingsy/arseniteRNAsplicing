@@ -1,0 +1,3 @@
+voila tsv build/splicegraph.sql deltapsi/*.deltapsi.voila --show-all -f output_delta/motor18v18_all.tsv
+voila tsv build/splicegraph.sql deltapsi/*.deltapsi.voila --changing-between-group-dpsi 0.2 --non-changing-between-group-dpsi 0.05 -f output_delta/motor18v18_filtered.tsv
+

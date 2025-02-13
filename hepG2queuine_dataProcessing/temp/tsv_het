@@ -1,0 +1,3 @@
+voila tsv build/splicegraph.sql het/*.het.voila --show-all -f output_het/motor18v18_all.tsv
+voila tsv build/splicegraph.sql het/*.het.voila --changing-between-group-dpsi 0.2 --non-changing-between-group-dpsi 0.05 -f output_het/motor18v18_filtered.tsv
+

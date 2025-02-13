@@ -1,0 +1,11 @@
+while read -r line;
+do
+	# echo """
+	trimmomatic PE -threads 4 -phred33 \
+		raw_data/${line}_1.fastq.gz raw_data/${line}_2.fastq.gz \
+		fastqTrimmed/${line}_1.fastq.gz raw_data/${line}_1unpaired.fastq.gz \
+		fastqTrimmed/${line}_2.fastq.gz raw_data/${line}_2unpaired.fastq.gz \
+		ILLUMINACLIP:params/TruSeq3-PE.fa:2:30:10 \
+		LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+	# """
+done < samp

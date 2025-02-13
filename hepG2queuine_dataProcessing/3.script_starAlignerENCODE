@@ -1,0 +1,25 @@
+# adapted from https://github.com/rosaxma/TDP-43-UNC13A-2021/blob/97c3ab74294d01bb302081dc6f9004dc3d61b704/RNA_alignment_and_splicing_analysis/sh_RNAseq.sh#L683
+while read -r line;
+do
+	STAR --runThreadN 10 \
+	--twopassMode Basic \
+	--genomeDir reference/ \
+	--readFilesCommand zcat \
+	--readFilesIn ./fastqTrimmed/${line}_1.fastq.gz ./fastqTrimmed/${line}_2.fastq.gz \
+	--outFileNamePrefix ./bam/${line}_ \
+	--quantMode TranscriptomeSAM GeneCounts \
+	--outSAMtype BAM SortedByCoordinate \
+	--outSAMunmapped Within KeepPairs \
+	--alignEndsType EndToEnd \
+	--outSAMstrandField intronMotif \
+	--outFilterIntronMotifs RemoveNoncanonical \
+	--outFilterType BySJout \
+	--outFilterMultimapNmax 20 \
+	--alignSJoverhangMin 8 \
+	--alignSJDBoverhangMin 1 \
+	--outFilterMismatchNmax 999 \
+	--outFilterMismatchNoverReadLmax 0.04 \
+	--alignIntronMin 20 \
+	--alignIntronMax 1000000 \
+	--alignMatesGapMax 1000000
+done < samp

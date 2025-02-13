@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/090/SRR19511190/SRR19511190_1.fastq.gz -o SRR19511190_GSM6210536_HEPG2_NGM_Untreated_2_Homo_sapiens_RNA-Seq_1.fastq.gz
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/090/SRR19511190/SRR19511190_2.fastq.gz -o SRR19511190_GSM6210536_HEPG2_NGM_Untreated_2_Homo_sapiens_RNA-Seq_2.fastq.gz
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/089/SRR19511189/SRR19511189_1.fastq.gz -o SRR19511189_GSM6210537_HEPG2_NGM_Treated_2_Homo_sapiens_RNA-Seq_1.fastq.gz
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/089/SRR19511189/SRR19511189_2.fastq.gz -o SRR19511189_GSM6210537_HEPG2_NGM_Treated_2_Homo_sapiens_RNA-Seq_2.fastq.gz
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/084/SRR19511184/SRR19511184_1.fastq.gz -o SRR19511184_GSM6210542_HEPG2_NGM_Untreated_3_Homo_sapiens_RNA-Seq_1.fastq.gz
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/084/SRR19511184/SRR19511184_2.fastq.gz -o SRR19511184_GSM6210542_HEPG2_NGM_Untreated_3_Homo_sapiens_RNA-Seq_2.fastq.gz
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/095/SRR19511195/SRR19511195_1.fastq.gz -o SRR19511195_GSM6210531_HEPG2_NGM_Treated_1_Homo_sapiens_RNA-Seq_1.fastq.gz
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/095/SRR19511195/SRR19511195_2.fastq.gz -o SRR19511195_GSM6210531_HEPG2_NGM_Treated_1_Homo_sapiens_RNA-Seq_2.fastq.gz
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/083/SRR19511183/SRR19511183_1.fastq.gz -o SRR19511183_GSM6210543_HEPG2_NGM_Treated_3_Homo_sapiens_RNA-Seq_1.fastq.gz
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/083/SRR19511183/SRR19511183_2.fastq.gz -o SRR19511183_GSM6210543_HEPG2_NGM_Treated_3_Homo_sapiens_RNA-Seq_2.fastq.gz
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/096/SRR19511196/SRR19511196_1.fastq.gz -o SRR19511196_GSM6210530_HEPG2_NGM_Untreated_1_Homo_sapiens_RNA-Seq_1.fastq.gz
+curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR195/096/SRR19511196/SRR19511196_2.fastq.gz -o SRR19511196_GSM6210530_HEPG2_NGM_Untreated_1_Homo_sapiens_RNA-Seq_2.fastq.gz

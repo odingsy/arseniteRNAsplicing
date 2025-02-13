@@ -1,0 +1,10 @@
+
+STAR --runThreadN 6 \
+--runMode genomeGenerate \
+--genomeDir reference \
+--genomeFastaFiles reference/hg38.fa \
+--sjdbGTFfile reference/gencode.v39.annotation.gff3 \
+--sjdbOverhang 149
+
+# using gencode GFF3 reference	1.5G(unzip) 
+# using /goldenPath/hg38/bigZips/latest/hg38.fa.gz 	(3.3G) 

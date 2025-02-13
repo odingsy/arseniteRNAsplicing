@@ -1,0 +1,1 @@
+majiq build reference/gencode.v39.annotation.gff3 -c settings_group.ini --min-experiments 18 -o build -j 14

@@ -1,0 +1,5 @@
+# voila tsv majiq_splicing/build_simplified/splicegraph.sql majiq_splicing/deltapsi_simplified/*.deltapsi.voila --show-all -f majiq_splicing/voilaOutput_simplified/3vs3_alltbl.tsv
+# voila tsv majiq_splicing/build_simplified/splicegraph.sql majiq_splicing/deltapsi_simplified/*.deltapsi.voila --changing-between-group-dpsi 0.1 --probability-threshold 0.95 -f majiq_splicing/voilaOutput_simplified/3vs3_filtedtbl.tsv
+
+voila tsv majiq_splicing/build_simplified/splicegraph.sql majiq_splicing/deltapsi_simplified/*.deltapsi.voila --changing-between-group-dpsi 0.1 -f majiq_splicing/voilaOutput_simplified/3vs3_filtedtbl_noProbThreshold.tsv
+

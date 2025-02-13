@@ -1,0 +1,17 @@
+### step 1: bam to Juncs
+#for bamfile in `ls bam/*Aligned.sortedByCoord.out.bam`; do
+#    echo "Converting $bamfile to $bamfile.junc"
+#    regtools junctions extract -a 8 -s XS -m 20 -M 1000000 $bamfile -o $bamfile.junc
+#    echo $bamfile.junc >> params/test_juncfiles.txt
+#done
+
+### step 2: intron clustering (side product producing .testYRIvsEU.sorted.gz at working directory) 
+# python params/leafcutter-master/clustering/leafcutter_cluster_regtools.py -j params/test_juncfiles.txt -m 30 -o lc/testYRIvsEU -l 1000000 
+### -l max intron length; -m minimal read in a cluster default = 30
+
+### step 3: differential intron excision analysis
+# params/leafcutter-master/scripts/gtf_to_exons.R reference/gencode.v39.annotation.gtf.gz params/exon.txt.gz
+# params/leafcutter-master/scripts/leafcutter_ds.R --num_threads 10 -i 3 -g 3 lc/testYRIvsEU_perind_numers.counts.gz params/groupFile.txt -o lc/3v3 -e params/exon.txt.gz
+
+### step 4: plot 
+params/leafcutter-master/scripts/ds_plots.R -e params/exon.txt.gz lc/testYRIvsEU_perind_numers.counts.gz params/groupFile.txt lc/3v3_cluster_significance.txt -f 0.05
