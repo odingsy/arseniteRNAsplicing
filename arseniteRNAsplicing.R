@@ -1,16 +1,3 @@
-# maxquant setting
-# 230329 combine search of two nuclear proteome pulldown experiments
-# - Multiplicity:2
-# - max. labeled AAs:3 (default) 
-# - 'Heavy label': Arg6, Lys8
-# - Max number of modifications per peptide: 5 (default)
-# - max missed cleavages: 2 (default)
-# - min peptide length: 7 (default)
-# - UP000005640_9606 (10/25/22) 
-# - match between runs: default setting
-# - 5 cores
-# - split search 
-
 # samples 
 # As_competitive_nuc_F.raw
 # As_competitive_nuc_R.raw
@@ -23,17 +10,21 @@ hs <- UniProt.ws::UniProt.ws(9606)
 sepCollapse <- '||' # separator for concatenation annotation information. 
 
 # load the data ----
-base <- '/Users/shiyuanguo/Library/CloudStorage/GoogleDrive-sguo039@ucr.edu/My Drive/PhD_study/conferences/23ASMS/data'
+base <- '/Users/shiyuanguo/Library/CloudStorage/GoogleDrive-sguo039@ucr.edu/My Drive/PhD_study/conferences/23ASMS'
 # raw <- file.path(base, 'PhD_study/conferences/23ASMS/rds') 
-split_pp <- readr::read_delim(file.path(base, '230329_AsCompetitive_combinedSplitSearch', 'peptides.txt'), na = c("", "NA","#NUM!"))
-split_pg <- readr::read_delim(file.path(base, '230329_AsCompetitive_combinedSplitSearch', 'proteinGroups.txt'), na = c("", "NA","#NUM!")) %>%
+split_pp <- readr::read_delim(file.path(base, 'data/230329_AsCompetitive_combinedSplitSearch', 'peptides.txt'), na = c("", "NA","#NUM!"))
+split_pg <- readr::read_delim(file.path(base, 'data/230329_AsCompetitive_combinedSplitSearch', 'proteinGroups.txt'), na = c("", "NA","#NUM!")) %>%
   filter(!(grepl("(CON|REV)__", `Protein IDs`) | grepl("(CON|REV)__", `Majority protein IDs`)))
-# supplientary table from Dong et al. (https://pubs.acs.org/doi/suppl/10.1021/acs.chemrestox.2c00244/suppl_file/tx2c00244_si_002.xlsx)
-dxjList <- readxl::read_xlsx(file.path(base, 'tx2c00244_si_002.xlsx'), sheet = 'Table S1') %>%
-  filter(!grepl(pattern = '^REV__', x = `Uniprot ID`)) %>%
-  separate_rows(`Uniprot ID`, sep = ';') %>%
-  pull(`Uniprot ID`)
-
+# Dong et al.(2022) CRT. SI table 2 (https://pubs.acs.org/doi/suppl/10.1021/acs.chemrestox.2c00244/suppl_file/tx2c00244_si_002.xlsx)
+dxjtbl <- readxl::read_xlsx(file.path(base, 'data/tx2c00244_si_002.xlsx'), sheet = 'Table S1', col_types = c(rep("text",2), rep("numeric",8))) %>%
+  filter(!grepl(pattern = '^REV__', x = `Uniprot ID`))
+# Burger et al.(2025) Cell. Table S1 (https://www.cell.com/cms/10.1016/j.cell.2024.11.025/attachment/a959124f-f54e-42cc-8a81-d771183f3c10/mmc1.xlsx)
+bl_ht <- readxl::read_xlsx(file.path(base, 'data/mmc1.xlsx'), sheet = 'HCT116-TPEN') %>% filter(`p.adj.signif` != 'ns')
+bl_hept <- readxl::read_xlsx(file.path(base, 'data/mmc1.xlsx'), sheet = 'Hepatocytes-TPEN') %>% filter(`p.adj.signif` != 'ns')
+bl_prot <- readxl::read_xlsx(file.path(base, 'data/mmc1.xlsx'), sheet = 'Prostate-TPEN') %>% filter(`p.signif` != 'ns')
+bl_hz <- readxl::read_xlsx(file.path(base, 'data/mmc1.xlsx'), sheet = 'HCT116-ZnCl2') %>% filter(`p.adj.signif` != 'ns')
+bl_hepz <- readxl::read_xlsx(file.path(base, 'data/mmc1.xlsx'), sheet = 'Hepatocytes-ZnCl2') %>% filter(`p.adj.signif` != 'ns')
+bl_proz <- readxl::read_xlsx(file.path(base, 'data/mmc1.xlsx'), sheet = 'Prostate-ZnCl2') %>% filter(`p.signif` != 'ns')
 
 # preprocessing  -----
 nuctbl <- split_pg %>%
@@ -64,13 +55,24 @@ upid <- nuctbl %>% separate_rows(`Protein IDs`) %>% pull(`Protein IDs`)
 # zf <- UniProt.ws::select(x = hs, keys = upid, columns = c('ft_zn_fing'), keytype = 'UniProtKB')
 # saveRDS(geneSymbol, file.path(base, 'PhD_study/conferences/23ASMS/rds/geneSymbol.rds'))
 # saveRDS(zf, file.path(base, 'PhD_study/conferences/23ASMS/rds/zf.rds'))
-geneSymbol <- readRDS(file.path(base, 'PhD_study/conferences/23ASMS/rds/geneSymbol.rds'))
-zf <- readRDS(file.path(base, 'PhD_study/conferences/23ASMS/rds/zf.rds'))
+geneSymbol <- readRDS(file.path(base, 'rds/geneSymbol.rds'))
+zf <- readRDS(file.path(base, 'rds/zf.rds'))
+tpen <- unique(c(bl_ht$uniprot_accession, bl_hept$uniprot_accession, bl_prot$uniprot_accession)) 
+zn <- unique(c(bl_hz$uniprot_accession, bl_hepz$uniprot_accession, bl_proz$uniprot_accession)) 
+dxjList <- dxjtbl %>%
+  separate_rows(`Uniprot ID`, sep = ';') %>%
+  pull(`Uniprot ID`)
 
 nuctbl <- nuctbl %>%
   rowwise() %>%
   mutate(gn = geneSymbol$Gene.Names..primary.[geneSymbol$From %in% unlist(strsplit(`Protein IDs`, split = ';'))] %>% unique(.) %>% .[complete.cases(.)] %>% paste0(., collapse = sepCollapse),
          `in Dong et al.(2022)?` = ifelse(any(unlist(strsplit(`Protein IDs`, split = ';')) %in% dxjList), 'yes', 'no'),
+         `constitutive Zinc binding?` = ifelse(str_replace_all(`Protein IDs`, pattern = ';', replacement = '|') %>% 
+                                                 str_detect(tpen, .) %>% 
+                                                 any(), 'yes', 'no'),
+         `inducible Zinc binding?` = ifelse(str_replace_all(`Protein IDs`, pattern = ';', replacement = '|') %>% 
+                                              str_detect(zn, .)%>% 
+                                              any(), 'yes', 'no'),
          zincFinger = zf$Zinc.finger[zf$From %in% unlist(strsplit(`Protein IDs`, split = ';'))] %>% unique(.) %>% .[complete.cases(.)] %>% paste0(., collapse = sepCollapse)) %>%
   ungroup() %>% 
   mutate(zf_type = case_when(
@@ -91,7 +93,8 @@ nuctbl <- nuctbl %>%
 
 # Table S1: a table summarizing all the interactive candidates ----
 tblout <- nuctbl %>% 
-  filter(nchar(zincFinger) !=0 & `num<1.5` <= 2 & mean > 1.5) %>% 
+  filter(`num<1.5` <= 2 & mean > 1.5) %>% 
+  filter(`constitutive Zinc binding?` == 'yes' | `inducible Zinc binding?` == 'yes' | nchar(zincFinger) !=0) %>% 
   mutate(across(where(is.double), ~signif(.x, digits = 3))) %>% 
   arrange(desc(mean)) %>%
   mutate(gn = factor(gn, levels = gn)) %>%
@@ -107,19 +110,54 @@ openxlsx::writeData(wb, 'test', tblout)
 openxlsx::conditionalFormatting(wb, 'test', rows = 1:(nrow(tblout)+1), cols = 1:ncol(tblout), rule = paste0("$", LETTERS[which(colnames(tblout) == "shade")], "1==", 1), style = lsty1)
 openxlsx::openXL(wb)
 
+# dxj's data overlap with Burger et al.(2025) Cell.
+# dxjtblout <- dxjtbl %>% 
+#   rowwise() %>%
+#   mutate(`constitutive Zinc binding?` = ifelse(str_replace_all(`Uniprot ID`, pattern = ';', replacement = '|') %>% 
+#                                                  str_detect(tpen, .) %>% 
+#                                                  any(), 'yes', 'no'),
+#          `inducible Zinc binding?` = ifelse(str_replace_all(`Uniprot ID`, pattern = ';', replacement = '|') %>% 
+#                                               str_detect(zn, .)%>% 
+#                                               any(), 'yes', 'no'),
+#          zincFinger = zf$Zinc.finger[zf$From %in% unlist(strsplit(`Uniprot ID`, split = ';'))] %>% unique(.) %>% .[complete.cases(.)] %>% paste0(., collapse = sepCollapse)) %>%
+#   ungroup() %>% 
+#   mutate(zf_type = case_when(
+#     stringr::str_detect(zincFinger, 'UBZ4') ~ 'UBZ4', # type 4 UBZs are CCHC http://www.ebi.ac.uk/interpro/entry/profile/PS51908/
+#     stringr::str_detect(zincFinger, 'PHD') ~ 'PHD',
+#     stringr::str_detect(zincFinger, 'C2H2') ~ 'C2H2',
+#     stringr::str_detect(zincFinger, 'C6H2') ~ 'C6H2',
+#     stringr::str_detect(zincFinger, 'C3H1') ~ 'C3H1',
+#     stringr::str_detect(zincFinger, 'CCHC') ~ 'CCHC',
+#     stringr::str_detect(zincFinger, 'C4') ~ 'C4',
+#     TRUE ~ ''
+#   )) %>% 
+#   mutate(`Arsenite replaceable zinc-finger domain` = case_when(
+#     zincFinger != '' ~ 'prefered',
+#     zincFinger %in% c('C2H2') ~ 'not prefered',
+#     zincFinger == '' ~ ''
+#   )) 
+# wb <- openxlsx::createWorkbook()
+# openxlsx::addWorksheet(wb, 'test')
+# lsty1 <- openxlsx::createStyle(bgFill = "#d6d2d2")
+# openxlsx::writeData(wb, 'test', dxjtblout)
+# openxlsx::conditionalFormatting(wb, 'test', rows = 1:(nrow(tblout)+1), cols = 1:ncol(tblout), rule = paste0("$", LETTERS[which(colnames(tblout) == "shade")], "1==", 1), style = lsty1)
+# openxlsx::openXL(wb)
+
+
 # Figure S2 GO analysis of the shortlist protein ----
-gene.df <- clusterProfiler::bitr(tblout$`Protein IDs`, fromType = "UNIPROT", toType = c("ENTREZID"),OrgDb = org.Hs.eg.db::org.Hs.eg.db)
-bp7 <- clusterProfiler::groupGO(gene = gene.df$ENTREZID, OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "BP", level = 7, readable = TRUE); bp7@result <- bp7@result %>% arrange(desc(Count))
-cc6 <- clusterProfiler::groupGO(gene = gene.df$ENTREZID, OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "CC", level = 6, readable = TRUE); cc6@result <- cc6@result %>% arrange(desc(Count))
-mf6 <- clusterProfiler::groupGO(gene = gene.df$ENTREZID, OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "MF", level = 6, readable = TRUE); mf6@result <- mf6@result %>% arrange(desc(Count))
+gene.df <- clusterProfiler::bitr(tblout %>% separate_rows(`Protein IDs`, sep = ';') %>% pull(`Protein IDs`), fromType = "UNIPROT", toType = c("ENTREZID"),OrgDb = org.Hs.eg.db::org.Hs.eg.db)
+bp5 <- clusterProfiler::groupGO(gene = gene.df$ENTREZID, OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "BP", level = 5, readable = TRUE); bp5@result <- bp5@result %>% arrange(desc(Count))
+bp <- enrichplot:::barplot.enrichResult(bp5, font.size = 10, showCategory=12, label_format = 50)
 
-bp <- enrichplot:::barplot.enrichResult(bp7, font.size = 10, showCategory=10, label_format = 50)
-cc <- enrichplot:::barplot.enrichResult(cc6, font.size = 10, showCategory=10, label_format = 50)
-mf <- enrichplot:::barplot.enrichResult(mf6, font.size = 10, showCategory=10, label_format = 50)
+cc7 <- clusterProfiler::groupGO(gene = gene.df$ENTREZID, OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "CC", level = 7, readable = TRUE); cc7@result <- cc7@result %>% arrange(desc(Count))
+cc <- enrichplot:::barplot.enrichResult(cc7, font.size = 10, showCategory=12, label_format = 50)
 
-ggsave('./pngs/bp.pdf', bp)
-ggsave('./pngs/cc.pdf', cc)
-ggsave('./pngs/mf.pdf', mf)
+mf7 <- clusterProfiler::groupGO(gene = gene.df$ENTREZID, OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "MF", level = 7, readable = TRUE); mf7@result <- mf7@result %>% arrange(desc(Count))
+mf <- enrichplot:::barplot.enrichResult(mf7, font.size = 10, showCategory=12, label_format = 50)
+
+ggsave('./pngs/bp.pdf', plot = bp, width = 5, height = 5, units = 'in')
+ggsave('./pngs/cc.pdf', plot = cc, width = 5, height = 5, units = 'in')
+ggsave('./pngs/mf.pdf', plot = mf, width = 5, height = 5, units = 'in')
 
 wb <- openxlsx::createWorkbook();
 openxlsx::addWorksheet(wb, 'BiologicalProcess'); openxlsx::writeData(wb, 'BiologicalProcess', head(bp7, 20));
@@ -134,14 +172,14 @@ p <- nuctbl %>%
          nucR = mean(c(nucR_1, nucR_2), na.rm = TRUE)) %>% 
   ggplot(aes(x = nucF, y = nucR))+
   geom_point(color = 'grey', size = 1, alpha = 0.5)+
-  geom_point(data = . %>% filter(`Protein IDs`%in% tblout$`Protein IDs`), aes(color = `Arsenite replaceable zinc-finger domain`), size = 1)+
-  ggrepel::geom_label_repel(data = . %>% filter((`Protein IDs`%in% tblout$`Protein IDs` & nucF > 1.8 & nucR > 1.8)| gn %in% c('ZRANB2')), aes(label = gn), box.padding = 0.5, max.overlaps = Inf)+
-  ggh4x::coord_axes_inside(labels_inside = TRUE, xlim = c(0,6), ylim = c(0,6), xintercept = 1, yintercept = 1, ratio = 1)+
-  labs(x = "1/forward = ctrl(L)/competitive(H)", y = "reverse = ctrl(H)/competitive(L)")+
+  geom_point(data = . %>% filter(`Protein IDs`%in% tblout$`Protein IDs`), color = '#F8766D', size = 1)+
+  ggrepel::geom_text_repel(data = . %>% filter((`Protein IDs`%in% tblout$`Protein IDs` & nucF > 2.2 & nucR > 2.2)| gn %in% c('ZRANB2')), aes(label = gn), box.padding = 0.5, max.overlaps = Inf)+
+  ggh4x::coord_axes_inside(labels_inside = TRUE, xlim = c(0,7), ylim = c(0,7), xintercept = 1, yintercept = 1, ratio = 1)+
+  labs(x = "Ratio(Control/Competition), Forward", y = "Ratio(Control/Competition), Reverse")+
   theme_classic()+ # increase x limit
   theme(legend.position = "none")
 
-ggsave(filename = file.path(base,'PhD_study/conferences/23ASMS/pngs/protein_dotplot.svg'), device = 'svg', plot = p, width = 5, height = 5, units = 'in')
+ggsave(filename = file.path(base,'pngs/protein_dotplot.svg'), device = 'svg', plot = p, width = 5, height = 5, units = 'in')
 # plotly::ggplotly(p)
 
 
