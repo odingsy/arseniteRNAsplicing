@@ -110,40 +110,6 @@ openxlsx::writeData(wb, 'test', tblout)
 openxlsx::conditionalFormatting(wb, 'test', rows = 1:(nrow(tblout)+1), cols = 1:ncol(tblout), rule = paste0("$", LETTERS[which(colnames(tblout) == "shade")], "1==", 1), style = lsty1)
 openxlsx::openXL(wb)
 
-# dxj's data overlap with Burger et al.(2025) Cell.
-# dxjtblout <- dxjtbl %>% 
-#   rowwise() %>%
-#   mutate(`constitutive Zinc binding?` = ifelse(str_replace_all(`Uniprot ID`, pattern = ';', replacement = '|') %>% 
-#                                                  str_detect(tpen, .) %>% 
-#                                                  any(), 'yes', 'no'),
-#          `inducible Zinc binding?` = ifelse(str_replace_all(`Uniprot ID`, pattern = ';', replacement = '|') %>% 
-#                                               str_detect(zn, .)%>% 
-#                                               any(), 'yes', 'no'),
-#          zincFinger = zf$Zinc.finger[zf$From %in% unlist(strsplit(`Uniprot ID`, split = ';'))] %>% unique(.) %>% .[complete.cases(.)] %>% paste0(., collapse = sepCollapse)) %>%
-#   ungroup() %>% 
-#   mutate(zf_type = case_when(
-#     stringr::str_detect(zincFinger, 'UBZ4') ~ 'UBZ4', # type 4 UBZs are CCHC http://www.ebi.ac.uk/interpro/entry/profile/PS51908/
-#     stringr::str_detect(zincFinger, 'PHD') ~ 'PHD',
-#     stringr::str_detect(zincFinger, 'C2H2') ~ 'C2H2',
-#     stringr::str_detect(zincFinger, 'C6H2') ~ 'C6H2',
-#     stringr::str_detect(zincFinger, 'C3H1') ~ 'C3H1',
-#     stringr::str_detect(zincFinger, 'CCHC') ~ 'CCHC',
-#     stringr::str_detect(zincFinger, 'C4') ~ 'C4',
-#     TRUE ~ ''
-#   )) %>% 
-#   mutate(`Arsenite replaceable zinc-finger domain` = case_when(
-#     zincFinger != '' ~ 'prefered',
-#     zincFinger %in% c('C2H2') ~ 'not prefered',
-#     zincFinger == '' ~ ''
-#   )) 
-# wb <- openxlsx::createWorkbook()
-# openxlsx::addWorksheet(wb, 'test')
-# lsty1 <- openxlsx::createStyle(bgFill = "#d6d2d2")
-# openxlsx::writeData(wb, 'test', dxjtblout)
-# openxlsx::conditionalFormatting(wb, 'test', rows = 1:(nrow(tblout)+1), cols = 1:ncol(tblout), rule = paste0("$", LETTERS[which(colnames(tblout) == "shade")], "1==", 1), style = lsty1)
-# openxlsx::openXL(wb)
-
-
 # Figure S2 GO analysis of the shortlist protein ----
 gene.df <- clusterProfiler::bitr(tblout %>% separate_rows(`Protein IDs`, sep = ';') %>% pull(`Protein IDs`), fromType = "UNIPROT", toType = c("ENTREZID"),OrgDb = org.Hs.eg.db::org.Hs.eg.db)
 bp5 <- clusterProfiler::groupGO(gene = gene.df$ENTREZID, OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "BP", level = 5, readable = TRUE); bp5@result <- bp5@result %>% arrange(desc(Count))
@@ -170,40 +136,66 @@ p <- nuctbl %>%
   rowwise() %>%
   mutate(nucF = mean(c(nucF_1, nucF_2), na.rm = TRUE), 
          nucR = mean(c(nucR_1, nucR_2), na.rm = TRUE)) %>% 
-  ggplot(aes(x = nucF, y = nucR))+
-  geom_point(color = 'grey', size = 1, alpha = 0.5)+
-  geom_point(data = . %>% filter(`Protein IDs`%in% tblout$`Protein IDs`), color = '#F8766D', size = 1)+
-  ggrepel::geom_text_repel(data = . %>% filter((`Protein IDs`%in% tblout$`Protein IDs` & nucF > 2.2 & nucR > 2.2)| gn %in% c('ZRANB2')), aes(label = gn), box.padding = 0.5, max.overlaps = Inf)+
+  mutate(gn = case_when(
+    gn == 'HARS1||HARS2' ~ 'HARS1/2',
+    gn == 'PTBP1||PTBP3' ~ 'PTBP1/3',
+    TRUE ~ gn
+  )) %>% 
+  ggplot(aes(x = nucF, y = nucR), shape = 20)+
+  geom_point(color = 'grey', size = 0.3, alpha = 0.2)+
+  geom_point(data = . %>% filter(`Protein IDs`%in% tblout$`Protein IDs`), color = '#F8766D', size = 0.4)+
+  ggrepel::geom_text_repel(data = . %>% filter((gn %in% c('SF1','ZRANB2', 'DDX39B', 'PTBP1/3', 'RAD50', 'XRCC1', 'TP53BP1', 'MRE11', 'POLDIP3'))& gn != c('PGK1||PGK2')), aes(label = gn), size= 2, force_pull = 10, force = 1, min.segment.length = 0.1, max.overlaps = Inf)+
+  # ggrepel::geom_text_repel(data = . %>% filter(((`Protein IDs`%in% tblout$`Protein IDs` & nucF > 2.2 & nucR > 2.2) | gn %in% c('ZRANB2'))& gn != c('PGK1||PGK2')), aes(label = gn), box.padding = 0.5, min.segment.length = 0.1, max.overlaps = Inf)+
   ggh4x::coord_axes_inside(labels_inside = TRUE, xlim = c(0,7), ylim = c(0,7), xintercept = 1, yintercept = 1, ratio = 1)+
   labs(x = "Ratio(Control/Competition), Forward", y = "Ratio(Control/Competition), Reverse")+
   theme_classic()+ # increase x limit
   theme(legend.position = "none")
 
-ggsave(filename = file.path(base,'pngs/protein_dotplot.svg'), device = 'svg', plot = p, width = 5, height = 5, units = 'in')
+ggsave(filename = file.path(base, 'pngs/protein_dotplot.svg'), device = 'svg', plot = p, width = 5, height = 5, units = 'in')
 # plotly::ggplotly(p)
 
 
 # Figure S1, find the peptides -----
-protn <- c('SF1', 'SF1',
-           'PTBP1/3', 'PTBP1/3',
-           'XRN2', 'XRN2',
-           'ZC3H15', 'ZC3H15',
-           'METAP1',
-           'MRE11', 'MRE11',
-           'RBM10', 'RBM10')
-ppn <- c('QGIETPEDQNDLR', 'SITNTTVCTK', 
-         'LSLDGQNIYNACCTLR', 'VTNLLMLK',
-         'EGMEAAVEK', 'NLTVILSDASAPGEGEHK',
-         'DEELEKDTMDNWDEK', 'EVFEFRPELVNDDDEEADDTR',
-         'LFHTAPNVPHYAK',
-         'GNDTFVTLDEILR', 'IDISPVLLQK',
-         'LDQQTLPLGGR', 'MLPQAATEDDIR')
+pptbl <- tribble(
+  ~protein, ~peptide, ~group,
+  # RNA splicing
+  'SF1', 'QGIETPEDQNDLR', 'splicing',
+  'SF1', 'SITNTTVCTK', 'splicing',
+  'PTBP1', 'LSLDGQNIYNACCTLR', 'splicing',
+  'PTBP1/3', 'VTNLLMLK','splicing',
+  'DDX39B', 'QVMMFSATLSK', 'splicing',
+  'ZRANB2', 'LDEDEDEDDADLSK', 'splicing',
+  'ZRANB2', 'AVGPASILK', 'splicing',
+  # DNA repair
+  'RAD50', 'VLASLIIR', 'repair',
+  'RAD50', 'MSILGVR', 'repair',
+  'TP53BP1', 'ADDPLRLDQELQQPQTQEK', 'repair',
+  'TP53BP1', 'QDATVQTER', 'repair',
+  'XRCC1', 'AQGAVTGKPR', 'repair',
+  'MRE11', 'GNDTFVTLDEILR', 'repair',
+  'MRE11', 'IDISPVLLQK', 'repair',
+  # 'XRN2', 'EGMEAAVEK',
+  # 'XRN2', 'NLTVILSDASAPGEGEHK',
+  # 'ZC3H15', 'DEELEKDTMDNWDEK',
+  # 'ZC3H15', 'EVFEFRPELVNDDDEEADDTR',
+  # 'METAP1', 'LFHTAPNVPHYAK',
+  # 'RBM10', 'LDQQTLPLGGR',
+  # 'RBM10', 'MLPQAATEDDIR',
+  'POLD1', 'ITVALPR', 'replication',
+  'POLD1', 'EAADWVSGHFPSPIR', 'replication',
+  'POLE3', 'AERPEDLNLPNAVITR', 'replication',
+  'POLE3', 'EALPDGVNISK', 'replication'
+)
 
-split_pp %>% 
-  dplyr::filter(Sequence %in% ppn) %>% 
-  mutate(Sequence = factor(Sequence, levels = ppn)) %>% 
+splicing <- hcl.colors(hcl.pals("sequential")[10], n = 8)[c(4,4,6,6,5,3,3)]#|> scales::show_col()
+repair <- hcl.colors(hcl.pals("sequential")[5], n = 8)[c(3,3,5,5,4,2,2)]#|> scales::show_col()
+replication <- hcl.colors(hcl.pals("sequential")[7], n = 8)[c(4,4,5,5)]#|> scales::show_col()
+
+p <- split_pp %>% 
+  dplyr::filter(Sequence %in% pptbl$peptide) %>% 
+  mutate(Sequence = factor(Sequence, levels = pptbl$peptide)) %>% 
   arrange(Sequence) %>%
-  mutate(gn = protn) %>% 
+  mutate(gn = pptbl$protein) %>% 
   dplyr::select(Sequence, gn, dplyr::matches('Ratio H/L normalized nuc._1'), dplyr::matches('Ratio H/L normalized nuc._2')) %>% 
   mutate(across(matches('nucF'), ~{1/.x})) %>%
   mutate(peptide_gn = sprintf(paste0('%s', '%',7-nchar(gn)+10, 's'), Sequence, gn) %>% factor(., levels = rev(.))) %>% 
@@ -212,12 +204,23 @@ split_pp %>%
   mutate(samp = factor(samp, levels = c('nucF_1', 'nucR_1', 'nucF_2', 'nucR_2'))) %>% 
   group_by(gn) %>%
   ggplot(aes(peptide_gn, ratio_normalized))+
-  stat_summary(aes(fill = reorder(gn, Sequence)), geom = 'bar', fun = 'mean' , na.rm = TRUE, width = .5)+
+  stat_summary(aes(fill = peptide_gn), geom = 'bar', fun = 'mean' , na.rm = TRUE, width = .5)+
   stat_summary(geom = 'errorbar', fun.min = function(y) mean(y, na.rm = TRUE) - sd(y, na.rm = TRUE), fun.max = function(y) mean(y, na.rm = TRUE) + sd(y, na.rm = TRUE), color = 'black', width = 0.2 )+
-  geom_hline(yintercept=1.5, linetype="dashed",color = "blue", linewidth = .5)+
+  geom_hline(yintercept=1.5, linetype="dashed",color = "red", linewidth = .5)+
   geom_point(aes(color = samp), size = 2)+
   coord_flip()+
   ylab('control/competitor')+
-  scale_color_manual(values = hcl.colors(hcl.pals('diverging')[2], n = 8)[c(1,2,7,8)])+
-  guides(color = FALSE, fill = FALSE)+
-  theme_classic()
+  scale_color_manual(values = hcl.colors(hcl.pals('diverging')[2], n = 8)[c(1,2,7,8)])+ # dot color
+  scale_fill_manual(values = c(replication, repair, splicing))+
+  guides(fill = FALSE, color = guide_legend(override.aes = list(size = 0.5)))+
+  theme_classic()+
+  theme(axis.title.y = element_blank(), 
+        legend.title=element_blank(),
+        legend.text = element_text(size = 6),
+        legend.key.size = unit(0.5, "lines"),
+        strip.text.x = element_blank(),
+        strip.background = element_rect(colour="white", fill="white"),
+        legend.position=c(.8,.4))
+
+ggsave(filename = file.path(base, 'pngs/peptide_barplot.svg'), device = 'svg', plot = p, width = 5, height = 5, units = 'in')
+
