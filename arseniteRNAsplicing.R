@@ -110,6 +110,16 @@ openxlsx::writeData(wb, 'test', tblout)
 openxlsx::conditionalFormatting(wb, 'test', rows = 1:(nrow(tblout)+1), cols = 1:ncol(tblout), rule = paste0("$", LETTERS[which(colnames(tblout) == "shade")], "1==", 1), style = lsty1)
 openxlsx::openXL(wb)
 
+# overlapping with Dong et al 2022
+lst <- tblout %>% 
+  separate_rows(`Protein IDs`, sep = ';') %>%
+  pull(`Protein IDs`)
+
+sum(lst %in% dxjList)
+sum(!lst %in% dxjList)
+sum(dxjList %in% lst)
+sum(!dxjList %in% lst)
+
 # Figure S2 GO analysis of the shortlist protein ----
 gene.df <- clusterProfiler::bitr(tblout %>% separate_rows(`Protein IDs`, sep = ';') %>% pull(`Protein IDs`), fromType = "UNIPROT", toType = c("ENTREZID"),OrgDb = org.Hs.eg.db::org.Hs.eg.db)
 bp5 <- clusterProfiler::groupGO(gene = gene.df$ENTREZID, OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "BP", level = 5, readable = TRUE); bp5@result <- bp5@result %>% arrange(desc(Count))
