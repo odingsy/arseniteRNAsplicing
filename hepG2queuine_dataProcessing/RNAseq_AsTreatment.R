@@ -15,7 +15,11 @@ lc <- inner_join(read_delim(file.path(basepath, 'lc/3v3_effect_sizes.txt')) %>%
              mutate(strand = str_extract(cid, pattern = "(\\+|-)"),
                     cluster = paste(chr, cid, sep = ':')),
            read_delim(file.path(basepath, 'lc/3v3_cluster_significance.txt')) %>%
-             filter(p.adjust < 0.05), by = c('cluster')) %>%
+             filter(p.adjust < 0.05), by = c('cluster')) %>% 
+# leafcutter_threshold	leafcuter_sites 	overlap_with_majiq_(61sites) 	SEMA3F_identified?
+# adj p-value < 0.05  772	41	yes 
+# adj p-value < 0.01	293	29	yes 
+# adj p-value < 0.001	70	8	no
   mutate(width = end - start + 1) %>%
   group_by(cid) %>%
   slice(which.max(width)) %>%

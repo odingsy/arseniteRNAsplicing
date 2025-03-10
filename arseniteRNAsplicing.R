@@ -1,8 +1,5 @@
-# samples 
-# As_competitive_nuc_F.raw
-# As_competitive_nuc_R.raw
-# nucNAP5F_20230207025301.raw
-# nucNAP5R_20230207070239.raw
+# Raw mass spectrometry data (nucF_1.raw, nucR_1.raw, nucF_2.raw, nucR_2.raw) were processed using MaxQuant. 
+# The subsequent analysis and scripting were performed based on the MaxQuant output and data from publicly available sources.
 
 
 library(tidyverse)
@@ -151,12 +148,12 @@ p <- nuctbl %>%
     gn == 'PTBP1||PTBP3' ~ 'PTBP1/3',
     TRUE ~ gn
   )) %>% 
-  ggplot(aes(x = nucF, y = nucR), shape = 20)+
+  ggplot(aes(x = nucF, y = nucR, group = gn), shape = 20)+
   geom_point(color = 'grey', size = 0.3, alpha = 0.2)+
   geom_point(data = . %>% filter(`Protein IDs`%in% tblout$`Protein IDs`), color = '#F8766D', size = 0.4)+
-  ggrepel::geom_text_repel(data = . %>% filter((gn %in% c('SF1','ZRANB2', 'DDX39B', 'PTBP1/3', 'RAD50', 'XRCC1', 'TP53BP1', 'MRE11', 'POLDIP3'))& gn != c('PGK1||PGK2')), aes(label = gn), size= 2, force_pull = 10, force = 1, min.segment.length = 0.1, max.overlaps = Inf)+
+  ggrepel::geom_text_repel(data = . %>% filter((gn %in% c('SF1','ZRANB2', 'DDX39B', 'PTBP1/3', 'RAD50', 'XRCC1', 'TP53BP1', 'MRE11', 'POLDIP3', 'DFFA', 'PPA1', 'HIRIP3', 'HNRNPK','DSTN', 'HARS1/2', 'ZC3H15', 'RAVER1', 'METAP1', 'EIF3H', 'LAMP2', 'XRN2') & gn != c('PGK1||PGK2'))), aes(label = gn), size= 2, force_pull = 10, force = 1, min.segment.length = 0.1, max.overlaps = Inf)+
   # ggrepel::geom_text_repel(data = . %>% filter(((`Protein IDs`%in% tblout$`Protein IDs` & nucF > 2.2 & nucR > 2.2) | gn %in% c('ZRANB2'))& gn != c('PGK1||PGK2')), aes(label = gn), box.padding = 0.5, min.segment.length = 0.1, max.overlaps = Inf)+
-  ggh4x::coord_axes_inside(labels_inside = TRUE, xlim = c(0,7), ylim = c(0,7), xintercept = 1, yintercept = 1, ratio = 1)+
+  ggh4x::coord_axes_inside(labels_inside = TRUE, xlim = c(0,7), ylim = c(0,4), xintercept = 1, yintercept = 1, ratio = 1.35)+
   labs(x = "Ratio(Control/Competition), Forward", y = "Ratio(Control/Competition), Reverse")+
   theme_classic()+ # increase x limit
   theme(legend.position = "none")
@@ -164,7 +161,7 @@ p <- nuctbl %>%
 ggsave(filename = file.path(base, 'pngs/protein_dotplot.svg'), device = 'svg', plot = p, width = 5, height = 5, units = 'in')
 # plotly::ggplotly(p)
 
-
+# gn %in% c('SF1','ZRANB2', 'DDX39B', 'PTBP1/3', 'RAD50', 'XRCC1', 'TP53BP1', 'MRE11', 'POLDIP3', 'DFFA', 'PPA1', 'HIRIP3', 'HNRNPK','DSTN', 'HARS1/2')
 # Figure S1, find the peptides -----
 pptbl <- tribble(
   ~protein, ~peptide, ~group,
