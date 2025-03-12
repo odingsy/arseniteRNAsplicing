@@ -1,5 +1,5 @@
 library(tidyverse)
-basepath <- '/Users/shiyuanguo/Library/CloudStorage/GoogleDrive-sguo039@ucr.edu/My Drive/PhD_study/conferences/23ASMS/hepG2queuine_dataProcessing'
+basepath <- # base path
 fc_cutoff <- 2
 pval_cutoff <- 0.05
 red <- hcl.colors(hcl.pals("sequential")[8], n = 5)[4] #|> scales::show_col()

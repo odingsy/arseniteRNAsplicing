@@ -7,7 +7,7 @@ hs <- UniProt.ws::UniProt.ws(9606)
 sepCollapse <- '||' # separator for concatenation annotation information. 
 
 # load the data ----
-base <- '/Users/shiyuanguo/Library/CloudStorage/GoogleDrive-sguo039@ucr.edu/My Drive/PhD_study/conferences/23ASMS'
+base <- # 
 # raw <- file.path(base, 'PhD_study/conferences/23ASMS/rds') 
 split_pp <- readr::read_delim(file.path(base, 'data/230329_AsCompetitive_combinedSplitSearch', 'peptides.txt'), na = c("", "NA","#NUM!"))
 split_pg <- readr::read_delim(file.path(base, 'data/230329_AsCompetitive_combinedSplitSearch', 'proteinGroups.txt'), na = c("", "NA","#NUM!")) %>%
