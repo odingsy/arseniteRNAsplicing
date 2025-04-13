@@ -1,5 +1,5 @@
 library(tidyverse)
-basepath <- # base path
+basepath <- '' # base path
 fc_cutoff <- 2
 pval_cutoff <- 0.05
 red <- hcl.colors(hcl.pals("sequential")[8], n = 5)[4] #|> scales::show_col()
@@ -8,7 +8,7 @@ x <- seq(0, 1, length.out = 4)
 cp <- scales::gradient_n_pal(c("#9C5D41", "#97928A", "#C1ABAD", "#D1D4D0"), x)(x)
 
 
-# 1. overlap majiq and leafcutter output for GSE205332 -----
+# Table S7 overlap majiq and leafcutter output for GSE205332 -----
 # rosa ma criteria: both MAJIQ (P(ΔΨ > 0.1) > 0.95) and LeafCutter (P < 0.05)
 lc <- inner_join(read_delim(file.path(basepath, 'lc/3v3_effect_sizes.txt')) %>%
              separate(intron, into = c('chr', 'start', 'end', 'cid'), sep = ':',remove = TRUE, convert = TRUE) %>%
@@ -56,136 +56,45 @@ openxlsx::writeData(wb, 'S7.MAJIQ_LeafCutter_OL', ij)
 openxlsx::conditionalFormatting(wb, 'S7.MAJIQ_LeafCutter_OL', rows = 1:(nrow(ij)+1), cols = 1:ncol(ij), rule = paste0("$", LETTERS[which(colnames(ij) == "shade")], "1==", 1), style = lsty1)
 openxlsx::openXL(wb)
 
-# 2. gene ontology analysis ------
-shortList <- readRDS(file.path(basepath, 'rds/overlap_majiq_leafcutter'))
-allquant <- read_tsv(file.path(basepath, 'majiq/3vs3_alltbl.tsv'), skip = 10)
+# Comparing with Riedmann splicing list  -----
+# https://static-content.springer.com/esm/art%3A10.1186%2Fs12864-015-1295-9/MediaObjects/12864_2015_1295_MOESM12_ESM.pdf
+drs <- scan(text = 'UCA1 MFAP5 ARHGDIB MGP
+CD36 LPL SAGE1 UST
+GJB5 SLC43A3 NCAM2 COL5A2
+AKT3 ITPR1 GNAT3 CYP4F22
+ITGB4 PLAUR KCTD12 SCN9A
+COL15A1 LGALS3BP SEMA6A NPAS2
+EDNRA L1CAM ETV4 MRPL17
+SEMA4B ALOX15B RNF122 FRMD3
+HLA-DMA LINGO2 ALS2CR8 SDC2
+TTLL1 SIDT1 RIBC2 COL25A1
+SASH1 ARL6IP6 ISM2 IDH2
+SUSD4 C16orf58 STAT5A DIRA3
+ANK2 CPM LUZP2 DOTL1L
+PLXND1 RPS6KA2 TSPAN18 SHC4
+ELANE MDGA2 KCNV1 CDY2B
+HLA-F PTH1R FHL2 P2RX4
+GATA4 IFT140 KLHL31 SHC3
+UQCRC1 NUDT8 CDH5 NPFFR2
+SLITRK4 PDZD4 MKX FCER1G
+PTK6 PRKCG SEC22C NAT6
+NEGR1-IT1', what = character(), quiet = TRUE)
 
-sum(shortList$gene_id %in% allquant$gene_id)
+urs <- scan(text = 'DOK2 THAP3 PDCD6 NOSTRIN
+PRR23A PYCARD GZMH STEAP2
+T1CAM1 SLC45A4 COL24A1 C1S
+FAM212B RYR2 LIMD1 SQSTM1
+ZNF469 FABP3 TRIM16 ZNF323
+DHRS2 UGAT1A5 SEMA3A ALDH3A1
+SH3GL2 ABCG2 HMOX1', what = character(), quiet = TRUE)
 
-shortList <- str_extract(shortList$gene_id, pattern = "^.+(?=\\.)") |> unique()
-fullList <- str_extract(allquant$gene_id, pattern = "^.+(?=\\.)") |> unique()
-sum(shortList %in% fullList)
-
-bp <- clusterProfiler::groupGO(gene = shortList, keyType = 'ENSEMBL', OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "BP", level = 6, readable = TRUE); bp@result <- bp@result %>% arrange(desc(Count))
-enrichplot:::barplot.enrichResult(bp, font.size = 10, showCategory=10, label_format = 50)
-
-
-mf <- clusterProfiler::groupGO(gene = shortList, keyType = 'ENSEMBL', OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "MF", level = 5, readable = TRUE); mf@result <- mf@result %>% arrange(desc(Count))
-enrichplot:::barplot.enrichResult(mf, font.size = 10, showCategory=10, label_format = 50)+ scale_x_continuous(breaks=c(0, 2, 4, 6, 8, 10))
-mf@result$geneID[1]
-
-cc <- clusterProfiler::groupGO(gene = shortList, keyType = 'ENSEMBL', OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "CC", level = 3, readable = TRUE); cc@result <- cc@result %>% arrange(desc(Count))
-enrichplot:::barplot.enrichResult(cc, font.size = 10, showCategory=10, label_format = 50)
-
-
-View(bp4@result)
-View(mf4@result)
-View(cc4@result)
-enrichplot:::barplot.enrichResult(bp4, showCategory=20)
-
-# ego3 <- clusterProfiler::gseGO(geneList = sort(shortList), keyType = 'ENSEMBL', OrgDb = org.Hs.eg.db::org.Hs.eg.db, ont = "ALL", minGSSize = 100,maxGSSize = 500,pvalueCutoff = 0.05, verbose = FALSE)
-
-# cp <- clusterProfiler::enrichGO(gene = shortList,
-#                           universe = fullList,
-#                           OrgDb = org.Hs.eg.db::org.Hs.eg.db,
-#                           keyType = 'ENSEMBL',
-#                           ont           = "ALL",
-#                           pAdjustMethod = "BH",
-#                           pvalueCutoff  = 0.05,
-#                           readable      = TRUE)
-
-AnnotationDbi::keytypes(EnsDb.Hsapiens.v86::EnsDb.Hsapiens.v86)
-AnnotationDbi::keytypes(org.Hs.eg.db::org.Hs.eg.db)
-
-
-# 3. spliceosome (https://www.genenames.org/data/genegroup/#!/group/1518)----
-spliceosomeProteins <- read_delim('https://www.genenames.org/cgi-bin/genegroup/download?id=1518&type=branch') 
-hs <- UniProt.ws::UniProt.ws(9606)
-t <- UniProt.ws::select(x = hs, keys = spliceosomeProteins$`Ensembl gene ID`, columns = c('ft_zn_fing'), keytype = 'Ensembl')
-hgnc <- UniProt.ws::select(x = hs, keys = spliceosomeProteins$`HGNC ID`, columns = c('ft_zn_fing', 'gene_primary'), keytype = 'HGNC')
-spliceosomeProteins$`HGNC ID` |> unique()
-hgnc$From |> unique()
-hgnc$Entry |> unique()
-tb <- hgnc %>% 
-  filter(!is.na(Zinc.finger)) 
-wb <- openxlsx::createWorkbook(); openxlsx::addWorksheet(wb, 'test'); openxlsx::writeData(wb, 'test', tb); openxlsx::openXL(wb)
-# AnnotationDbi::keytypes(hs)
-View(spliceosomeProteins)
+drs_gn <- AnnotationDbi::select(Homo.sapiens::Homo.sapiens, keys = drs, columns = c('ENSEMBL'), keytype = 'SYMBOL')
+drs_gn$ENSEMBL[drs_gn$SYMBOL == 'NAT6'] <- 'ENSG00000243477';drs_gn$ENSEMBL[drs_gn$SYMBOL == 'DOTL1L'] <- 'ENSG00000104885'; drs_gn$ENSEMBL[drs_gn$SYMBOL == 'DIRA3'] <- 'ENSG00000162595'; drs_gn$ENSEMBL[drs_gn$SYMBOL == 'C16orf58'] <- 'ENSG00000140688';drs_gn$ENSEMBL[drs_gn$SYMBOL == 'ALS2CR8'] <- 'ENSG00000138380'
+urs_gn <- AnnotationDbi::select(Homo.sapiens::Homo.sapiens, keys = urs, columns = c('ENSEMBL'), keytype = 'SYMBOL')
+urs_gn <- urs_gn[urs_gn$SYMBOL != 'T1CAM1', ]; urs_gn <- urs_gn[urs_gn$SYMBOL != 'UGAT1A5', ]; urs_gn$ENSEMBL[urs_gn$SYMBOL == 'FAM212B'] <- 'ENSG00000197852'; urs_gn$ENSEMBL[urs_gn$SYMBOL == 'ZNF323'] <- 'ENSG00000235109'
+sum(str_extract(ij$gene_id, pattern = '^[^\\.]*') %in% drs_gn$ENSEMBL)
+sum(str_extract(ij$gene_id, pattern = '^[^\\.]*') %in% urs_gn$ENSEMBL)
+sum(str_extract(mj$gene_id, pattern = '^[^\\.]*') %in% drs_gn$ENSEMBL)
+sum(str_extract(mj$gene_id, pattern = '^[^\\.]*') %in% urs_gn$ENSEMBL)
 
 
-# 4. extract bam reads that overlapped with  -----
-bamFile <- file.path('/Volumes/sgms/sequencing/hepG2_quieuine/bam', list.files('/Volumes/sgms/sequencing/hepG2_quieuine/bam', pattern = '*(1|2|3)_Homo_sapiens_RNA-Seq_Aligned.sortedByCoord.out.bam$'))
-bamtbl <- tibble::tibble(path = bamFile, samp = paste0(rep(c('trt', 'ctrl'), 3), rep(3:1, each = 2))) %>% 
-  dplyr::arrange(samp)
-
-igvWeb <- function(gn, region){
-  geneShortListed <- readxl::read_excel(file.path(basepath, 'joinMajiq_Leafcutter_rosaMacriteria.xlsx'), sheet = 'S7.MAJIQ_LeafCutter_OL') %>%  # readRDS(file.path(basepath, 'rds/overlap_majiq_leafcutter')) %>% 
-    dplyr::filter(gene_name %in% gn) %>% 
-    tidyr::separate_rows(exons_coords, sep = ';', convert = TRUE) %>% 
-    tidyr::separate_rows(exons_coords, sep = '-', convert = TRUE) %>%
-    dplyr::group_by(gene_name, seqid) %>% 
-    dplyr::summarise(start = min(exons_coords, na.rm = TRUE),
-                     end = max(exons_coords, na.rm = TRUE), 
-                     strand = unique(strand)) %>% 
-    dplyr::ungroup()
-  gsl <- GenomicRanges::makeGRangesFromDataFrame(df = geneShortListed, seqnames.field = 'seqid', start.field = 'start', end.field = 'end',strand.field = 'strand')
-  names(gsl) <- gn
-  gsl_paste <- with(geneShortListed, sprintf("%s:%d-%d",seqid, start, end))
-  
-  igv <- igvR::igvR()
-  BrowserViz::setBrowserWindowTitle(igv, gn)
-  igvR::setGenome(igv, "hg38")
-  
-  igvR::showGenomicRegion(igv, gsl_paste)
-  loc <- igvR::getGenomicRegion(igv)
-  
-  for (i in seq_len(nrow(bamtbl))){
-    ga <- GenomicAlignments::readGAlignments(Rsamtools::BamFile(bamtbl$path[i]), use.names = TRUE, param = Rsamtools::ScanBamParam(which = GenomicRanges::makeGRangesFromDataFrame(loc)))
-    track <- igvR::GenomicAlignmentTrack(trackName = bamtbl$samp[i], alignment = ga, visibilityWindow = 40000)
-    igvR::displayTrack(igv, track)
-  }
-}
-
-igvWeb('SEMA3F')
-
-
-
-# genome to RNA ----
-rearrangeRanges <- function(ir, wheretostart=IRanges::start(ir)[1], myspacer = rep(0, length(ir))) {
-  # Dr. Girke's splice product function
-  library(IRanges)
-  mywidth <- width(ir)
-  mywidth[1] <- mywidth[1] + (wheretostart - 1)
-  mywidth <- c(mywidth[1], (mywidth[-1] + myspacer[-1]))
-  myend <- cumsum(mywidth)
-  mystart <- myend - width(ir) + 1
-  ir_shift <- IRanges::IRanges(start=mystart, end=myend, names=names(ir))
-  return(ir_shift)
-}
-genomeToRNA <- function(gn, writeSeq = FALSE){
-  grs <- readxl::read_excel(file.path(basepath, 'joinMajiq_Leafcutter_rosaMacriteria.xlsx'), sheet = 'S7.MAJIQ_LeafCutter_OL') %>% 
-    dplyr::filter(gene_name %in% gn) %>%
-    tidyr::separate_rows(exons_coords, sep = ';', convert = TRUE) %>% 
-    separate(exons_coords, into = c('start', 'end'), sep = '-', convert = TRUE) %>% 
-    mutate(strand = '+') %>% 
-    dplyr::rename(chr = seqid)
-  # selectedExonCoord <- GenomicRanges::makeGRangesFromDataFrame(df = grs, seqnames.field = 'chr', start.field = 'start', end.field = 'end',strand.field = 'strand')
-  grl <- c()
-  grl <- GenomicRanges::makeGRangesListFromDataFrame(df = grs, split.field = "gene_name")
-  bseq <- BSgenome::getSeq(BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38, grl)
-  
-  if (writeSeq){
-    finalSeq <- bseq[[1]][1]
-    for (i in 2:length(bseq[[1]])){
-      finalSeq <- Biostrings::xscat(finalSeq, bseq[[1]][i])
-    }
-    # BSgenome::width(finalSeq)
-    Biostrings::writeXStringSet(x = finalSeq, file.path(basepath, 'fasta_regionOfInterest_2ndBatch', paste(gn, 'transctipt', sep = '_')))
-  } else {
-    print(gn)
-    rearrangeRanges(ir =  IRanges::ranges(grl[[1]]))
-  }
-}
-
-
-genomeToRNA('SEMA3F', writeSeq = TRUE)

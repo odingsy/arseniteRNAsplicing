@@ -88,7 +88,7 @@ nuctbl <- nuctbl %>%
     zincFinger == '' ~ ''
   )) 
 
-# Table S1: a table summarizing all the interactive candidates ----
+# Table S3: a table summarizing all the interactive candidates ----
 tblout <- nuctbl %>% 
   filter(`num<1.5` <= 2 & mean > 1.5) %>% 
   filter(`constitutive Zinc binding?` == 'yes' | `inducible Zinc binding?` == 'yes' | nchar(zincFinger) !=0) %>% 
@@ -117,7 +117,7 @@ sum(!lst %in% dxjList)
 sum(dxjList %in% lst)
 sum(!dxjList %in% lst)
 
-# Figure S2 GO analysis of the shortlist protein ----
+# Figure S1 GO analysis of the shortlist protein ----
 gene.df <- clusterProfiler::bitr(tblout %>% separate_rows(`Protein IDs`, sep = ';') %>% pull(`Protein IDs`), fromType = "UNIPROT", toType = c("ENTREZID"),OrgDb = org.Hs.eg.db::org.Hs.eg.db)
 bp5 <- clusterProfiler::groupGO(gene = gene.df$ENTREZID, OrgDb = org.Hs.eg.db::org.Hs.eg.db,ont = "BP", level = 5, readable = TRUE); bp5@result <- bp5@result %>% arrange(desc(Count))
 bp <- enrichplot:::barplot.enrichResult(bp5, font.size = 10, showCategory=12, label_format = 50)
@@ -138,7 +138,7 @@ openxlsx::addWorksheet(wb, 'CellularComponent'); openxlsx::writeData(wb, 'Cellul
 openxlsx::addWorksheet(wb, 'MolecularFunction'); openxlsx::writeData(wb, 'MolecularFunction', head(mf6, 20));
 openxlsx::openXL(wb)
 
-# Figure 2, combine nucF_1, nucF_2 and nucR_1, nucR_2 for dotplot -----
+# Figure 1B, combine nucF_1, nucF_2 and nucR_1, nucR_2 for dotplot -----
 p <- nuctbl %>%
   rowwise() %>%
   mutate(nucF = mean(c(nucF_1, nucF_2), na.rm = TRUE), 
@@ -161,8 +161,8 @@ p <- nuctbl %>%
 ggsave(filename = file.path(base, 'pngs/protein_dotplot.svg'), device = 'svg', plot = p, width = 5, height = 5, units = 'in')
 # plotly::ggplotly(p)
 
-# gn %in% c('SF1','ZRANB2', 'DDX39B', 'PTBP1/3', 'RAD50', 'XRCC1', 'TP53BP1', 'MRE11', 'POLDIP3', 'DFFA', 'PPA1', 'HIRIP3', 'HNRNPK','DSTN', 'HARS1/2')
-# Figure S1, find the peptides -----
+
+# Figure 1C, find the peptides -----
 pptbl <- tribble(
   ~protein, ~peptide, ~group,
   # RNA splicing
@@ -192,7 +192,7 @@ pptbl <- tribble(
   'POLD1', 'EAADWVSGHFPSPIR', 'replication',
   'POLE3', 'AERPEDLNLPNAVITR', 'replication',
   'POLE3', 'EALPDGVNISK', 'replication'
-)
+) # gn %in% c('SF1','ZRANB2', 'DDX39B', 'PTBP1/3', 'RAD50', 'XRCC1', 'TP53BP1', 'MRE11', 'POLDIP3', 'DFFA', 'PPA1', 'HIRIP3', 'HNRNPK','DSTN', 'HARS1/2')
 
 splicing <- hcl.colors(hcl.pals("sequential")[10], n = 8)[c(4,4,6,6,5,3,3)]#|> scales::show_col()
 repair <- hcl.colors(hcl.pals("sequential")[5], n = 8)[c(3,3,5,5,4,2,2)]#|> scales::show_col()
@@ -231,3 +231,63 @@ p <- split_pp %>%
 
 ggsave(filename = file.path(base, 'pngs/peptide_barplot.svg'), device = 'svg', plot = p, width = 5, height = 5, units = 'in')
 
+
+# Figure S3 survival -----
+library(tidyverse)
+library(drc)
+library(scales)
+base <- '/Users/shiyuanguo/Library/CloudStorage/GoogleDrive-sguo039@ucr.edu/My Drive/PhD_study/conferences/23ASMS'
+global_linewidth <- 0.3 # ggploting parameters
+
+
+tbl <- readxl::read_excel(file.path(base, 'SI_tables.xlsx'), sheet = '250410_survival', range = 'R1C1:R74C9', na = '0') %>%  
+  dplyr::filter(timepoint == 2) %>% 
+  dplyr::select(-timepoint) %>% 
+  pivot_longer(`...5`:`...9`, names_to = 'tr', values_to = 'relative survival') %>%
+  mutate(`relative survival` = `relative survival` - mean(`relative survival`[nM == 'BLANK'], na.rm = TRUE),
+         `relative survival` = ifelse(`relative survival` < 0, NA, `relative survival`)) %>% # remove incomplete data
+  filter(nM != 'BLANK') %>% 
+  filter(!is.na(`relative survival`)) %>%
+  ungroup() %>% 
+  group_by(plate) %>%
+  mutate(`relative survival` = `relative survival` / mean(`relative survival`[nM == 1], na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  mutate(nM = log10(as.numeric(nM))) %>% 
+  filter(plate %in% c(1:3)) %>% 
+  group_by(plate, nM) %>% 
+  summarise(`relative survival` = mean(`relative survival`)) %>% 
+  ungroup() %>% 
+  arrange(nM)
+
+wb <- openxlsx::createWorkbook(); openxlsx::addWorksheet(wb, 'test'); openxlsx::writeData(wb, 'test', tbl); openxlsx::openXL(wb)
+
+# mc <- drm(`relative survival` ~ nM, subset = celltype == 'HEK293T', data = tbl, fct = LL.4()) 
+# newdata <- expand.grid(nM=c(log10(1000),log10(5000),log10(10000),log10(30000), log10(50000))) # all the confidence interval
+# cp <- cbind(newdata, predict(mc, newdata = newdata, interval = 'confidence'), celltype = 'HEK293T');names(cp)[2] <- 'relative survival'
+# # (ic50_ctrl <- signif(10^(ED(mc, 0.5)[1])/1000, digits = 3))
+# (ic50_ctrl <- signif(10^(approx(x = fitted(mc), y = tbl$nM, xout = 0.5)$y)/1000, digits = 4))
+# predict(mc, newdata = expand.grid(log10(36950)), interval = 'confidence')
+# approx(x = tbl$nM, y = fitted(mc), xout = log10(10000))$y
+# 
+# 
+# p <- tbl %>%
+#   ggplot(aes(x = nM, y = `relative survival`))+
+#   geom_point(size = 0.1, color = '#cdd6ff')+
+#   geom_smooth(method = drm, method.args = list(fct = LN.4()), se = FALSE, linewidth = global_linewidth, color = '#0433ff')+
+#   geom_errorbar(data = cp, aes(ymin=cp[,'Lower'] , ymax=cp[,'Upper'] ), linewidth = global_linewidth, width = 0.05, color = '#0433ff')+
+#   scale_x_continuous(breaks = 0:5, labels = c('1 nM', '10 nM', '100 nM', '1 μM', '10 μM', '100 μM'))+
+#   scale_y_continuous(breaks = seq(0, 1.2, by = 0.2))+
+#   theme_classic()+
+#   coord_cartesian(ylim = c(0, 1.2))+
+#   xlab('[vem]')+ ylab('relative survival(%)')+
+#   geom_hline(yintercept=0.5,linetype = "dashed", colour= "grey", linewidth = global_linewidth)+
+#   guides(color = guide_legend('Treatment (LD50)'), shape = guide_legend('Treatment (LD50)', override.aes = list(size = 2, alpha = 1)))+
+#   ggbreak::scale_x_break(c(0.1, 2))+
+#   theme(axis.text.x.top = element_blank(),
+#         axis.ticks.x.top = element_blank(),
+#         axis.line.x.top = element_blank(),
+#         text = element_text(size = 7, family = 'arial'),
+#         axis.line = element_line(colour = 'black', linewidth = global_linewidth),
+#         axis.ticks = element_line(colour = "black", linewidth = global_linewidth))
+# 
+# ggsave(filename = file.path(base, 'pngs/legend1.svg'), device = 'svg', plot = p, width = 5, height = 5, units = 'in')
